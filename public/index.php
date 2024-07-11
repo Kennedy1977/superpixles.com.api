@@ -21,8 +21,11 @@ $app = AppFactory::create();
 // Register routes
 (require __DIR__ . '/../src/routes.php')($app);
 
-// Add middleware (optional)
-// (require __DIR__ . '/../src/middleware.php')($app);
+// Add middleware
+(require __DIR__ . '/../src/middleware.php')($app);
+
+// Register error handlers
+(require __DIR__ . '/../src/error_handlers.php')($app);
 
 // Run app
 $app->run();
