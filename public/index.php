@@ -12,6 +12,9 @@ $dotenv->load();
 AppFactory::setContainer(new DI\Container());
 $app = AppFactory::create();
 
+// Set up settings
+(require __DIR__ . '/../src/settings.php')($app);
+
 // Set up dependencies
 (require __DIR__ . '/../src/dependencies.php')($app);
 
