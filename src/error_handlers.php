@@ -1,30 +1,29 @@
 <?php
 
-use Psr\Http\Message\ResponseInterface as Response;
-use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\App;
-use Slim\Exception\HttpNotFoundException;
 use Slim\Handlers\ErrorHandler;
+use Psr\Http\Message\ServerRequestInterface as Request;
+use Psr\Http\Message\ResponseInterface as Response;
 
 return function (App $app) {
     $container = $app->getContainer();
 
-    // Custom 404 handler
-    $notFoundHandler = function (
+    $errorHandler = function (
         Request $request,
         Throwable $exception,
         bool $displayErrorDetails,
         bool $logErrors,
         bool $logErrorDetails
-    ) use ($app): Response {
-        $response = new \Slim\Psr7\Response();
-        $response->getBody()->write('Oh no! page not found!');
-        return $response->withStatus(404)->withHeader('Content-Type', 'text/html');
+    ) use ($container) {
+        $payload = ['error' => $exception->getMessage()];
+        $response = $container->get('responseFactory')->createResponse();
+        $response->getBody()->write(json_encode($payload));
+        return $response->withHeader('Content-Type', 'application/json');
     };
 
-    // Add the custom error handler
     $app->addRoutingMiddleware();
-
+    $app->addBodyParsingMiddleware();
     $errorMiddleware = $app->addErrorMiddleware(true, true, true);
-    $errorMiddleware->setErrorHandler(HttpNotFoundException::class, $notFoundHandler);
+    $errorMiddleware->setDefaultErrorHandler($errorHandler);
 };
+
