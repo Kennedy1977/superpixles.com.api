@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Superpixles Exploding Emojis</title>
+    <style>
+      html, body {
+          background-color: #282c34;
+          margin: 0;
+          overflow: hidden;
+          font-family: Arial, sans-serif;
+          color: white;
+      }
+
+      body {
+          cursor: none; /* Hide the default cursor */
+      }
+
+      #emoji-container {
+          position: relative;
+          width: 100%;
+          height: 100vh;
+      }
+
+      .emoji, .object {
+          position: absolute;
+          font-size: 2rem;
+          user-select: none;
+          pointer-events: none;
+          animation: fall 5s linear forwards;
+      }
+
+      .object {
+          width: 64px;
+          height: 64px;
+          font-size: 64px;
+          line-height: 64px;
+      }
+
+      .explosion {
+          position: absolute;
+          font-size: 1.5rem;
+          opacity: 1;
+          user-select: none;
+          pointer-events: none;
+          animation: explode 1s forwards;
+      }
+
+      .bullet {
+          position: absolute;
+          width: 10px;
+          height: 10px;
+          background-color: white;
+          border-radius: 50%;
+          animation: shoot 1s linear forwards;
+      }
+
+      #user-icon {
+          position: absolute;
+          font-size: 2rem;
+          pointer-events: none;
+          user-select: none;
+      }
+
+      #life {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          font-size: 20px;
+      }
+
+      #score {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          font-size: 20px;
+      }
+
+      #game-over {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          font-size: 48px;
+          color: red;
+          display: none;
+      }
+
+      @keyframes fall {
+          0% {
+              top: -5%;
+          }
+          100% {
+              top: 90%;
+          }
+      }
+
+      @keyframes shoot {
+          0% {
+              bottom: 10px;
+          }
+          100% {
+              bottom: 100%;
+          }
+      }
+
+      @keyframes explode {
+          0% {
+              transform: scale(1);
+              opacity: 1;
+          }
+          100% {
+              transform: scale(2);
+              opacity: 0;
+          }
+      }
+
+      @keyframes tintGreen {
+          0% {
+              background: linear-gradient(rgba(0, 128, 0, 0.3), #282c34 30%);
+          }
+          100% {
+              background: #282c34;
+          }
+      }
+
+      @keyframes tintRed {
+          0% {
+              background: linear-gradient(rgba(255, 0, 0, 0.3)), #282c34 30%);
+          }
+          100% {
+              background: #282c34;
+          }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="emoji-container"></div>
+    <div id="user-icon">💩</div>
+    <div id="life">Life: 100%</div>
+    <div id="score">Score: 0</div>
+    <div id="game-over">G A M E O V E R ! ! !</div>
+    <script>
+      const emojiContainer = document.getElementById("emoji-container");
+      const userIcon = document.getElementById("user-icon");
+      const lifeDisplay = document.getElementById("life");
+      const scoreDisplay = document.getElementById("score");
+      const gameOverDisplay = document.getElementById("game-over");
+      const emojis = [
+        "😀",
+        "😂",
+        "😍",
+        "🥳",
+        "🤩",
+        "😎",
+        "😇",
+        "🥺",
+        "😭",
+        "😡",
+      ];
+      const objects = [
+        "🍎",
+        "🎈",
+        "🚀",
+        "💎",
+        "🏆",
+        "📚",
+        "🎁",
+        "🌟",
+        "🐱",
+        "🎲",
+      ];
+      const explosionEmojis = ["💥", "🔥", "✨", "💨"];
+      let life = 100;
+      let score = 0;
+      let gameOver = false;
+
+      document.addEventListener("mousemove", (event) => {
+        userIcon.style.left = event.clientX - userIcon.offsetWidth / 2 + "px";
+        userIcon.style.top = event.clientY - userIcon.offsetHeight / 2 + "px";
+      });
+
+      function updateLife(damage) {
+        life -= damage;
+        life = Math.max(0, life);
+        lifeDisplay.textContent = `Life: ${Math.round(life)}%`;
+
+        if (life <= 0 && !gameOver) {
+          endGame();
+        }
+      }
+
+      function replenishLife(amount) {
+        life += amount;
+        life = Math.min(100, life); // Ensure life does not exceed 100%
+        lifeDisplay.textContent = `Life: ${Math.round(life)}%`;
+      }
+
+      function updateScore(points) {
+        score += points;
+        scoreDisplay.textContent = `Score: ${score}`;
+      }
+
+      function endGame() {
+        gameOver = true;
+        gameOverDisplay.style.display = "block";
+        document.removeEventListener("click", handleClick);
+        document.removeEventListener("contextmenu", handleClick);
+        setTimeout(() => {
+          document.addEventListener("click", resetGame);
+        }, 1000); // Adding delay to prevent immediate restart on accidental click
+      }
+
+      function resetGame() {
+        life = 100;
+        score = 0;
+        lifeDisplay.textContent = `Life: ${life}%`;
+        scoreDisplay.textContent = `Score: ${score}`;
+        gameOverDisplay.style.display = "none";
+        gameOver = false;
+        document.removeEventListener("click", resetGame);
+        document.addEventListener("click", handleClick);
+        document.addEventListener("contextmenu", handleClick);
+      }
+
+      function createEmoji() {
+        if (gameOver) return;
+
+        const emoji = document.createElement("div");
+        emoji.classList.add("emoji");
+        emoji.style.left = Math.random() * 100 + "vw";
+        const fontSize = Math.random() * 2 + 1; // Font size in rem
+        emoji.style.fontSize = `${fontSize}rem`;
+        emoji.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+        emojiContainer.appendChild(emoji);
+
+        setTimeout(() => {
+          if (!emoji.classList.contains("hit")) {
+            const emojiRect = emoji.getBoundingClientRect();
+            const damage = emojiRect.width * emojiRect.height * 0.005; // 50% of the size in px
+            updateLife(damage);
+            createExplosion(emojiRect.left, emojiRect.top);
+            emoji.remove();
+          }
+        }, 5000);
+      }
+
+      function createObject() {
+        if (gameOver) return;
+
+        const object = document.createElement("div");
+        object.classList.add("object");
+        object.style.left = Math.random() * 100 + "vw";
+        object.innerText = objects[Math.floor(Math.random() * objects.length)];
+        emojiContainer.appendChild(object);
+
+        setTimeout(() => {
+          if (!object.classList.contains("hit")) {
+            object.remove();
+          }
+        }, 30000); // Remove object after 30 seconds if not hit
+      }
+
+      function applyGoodEffect(object) {
+        document.body.style.animation = "tintGreen 1s forwards";
+        switch (object) {
+          case "🍎":
+            replenishLife(10);
+            updateScore(15);
+            break;
+          case "🎈":
+            updateScore(20);
+            replenishLife(5);
+            break;
+          case "🚀":
+            updateScore(25);
+            replenishLife(10);
+            break;
+          case "💎":
+            updateScore(50);
+            replenishLife(20);
+            break;
+          case "🏆":
+            updateScore(100);
+            replenishLife(25);
+            break;
+          case "📚":
+            updateScore(10);
+            replenishLife(10);
+            break;
+          case "🎁":
+            updateScore(30);
+            replenishLife(15);
+            break;
+          case "🌟":
+            updateScore(50);
+            replenishLife(20);
+            break;
+          case "🐱":
+            updateScore(15);
+            replenishLife(10);
+            break;
+          case "🎲":
+            updateScore(25);
+            replenishLife(5);
+            break;
+          default:
+            break;
+        }
+      }
+
+      function applyBadEffect(object) {
+        document.body.style.animation = "tintRed 1s forwards";
+        switch (object) {
+          case "🍎":
+            updateLife(5);
+            updateScore(-10);
+            break;
+          case "🎈":
+            updateLife(5);
+            updateScore(-10);
+            break;
+          case "🚀":
+            updateLife(10);
+            updateScore(-15);
+            break;
+          case "💎":
+            updateLife(10);
+            updateScore(-20);
+            break;
+          case "🏆":
+            updateLife(15);
+            updateScore(-30);
+            break;
+          case "📚":
+            updateLife(5);
+            updateScore(-5);
+            break;
+          case "🎁":
+            updateLife(10);
+            updateScore(-20);
+            break;
+          case "🌟":
+            updateLife(15);
+            updateScore(-25);
+            break;
+          case "🐱":
+            updateLife(5);
+            updateScore(-10);
+            break;
+          case "🎲":
+            updateLife(10);
+            updateScore(-20);
+            break;
+          default:
+            break;
+        }
+      }
+
+      function createExplosion(left, top) {
+        for (let i = 0; i < 10; i++) {
+          const explosion = document.createElement("div");
+          explosion.classList.add("explosion");
+          explosion.style.left = `${left}px`;
+          explosion.style.top = `${top}px`;
+          explosion.innerText =
+            explosionEmojis[Math.floor(Math.random() * explosionEmojis.length)];
+
+          const angle = Math.random() * 2 * Math.PI;
+          const distance = Math.random() * 100;
+          explosion.style.setProperty(
+            "--explode-x",
+            `${Math.cos(angle) * distance}px`
+          );
+          explosion.style.setProperty(
+            "--explode-y",
+            `${Math.sin(angle) * distance}px`
+          );
+
+          emojiContainer.appendChild(explosion);
+
+          setTimeout(() => {
+            explosion.remove();
+          }, 1000);
+        }
+      }
+
+      function shootBullet(event) {
+        if (gameOver) return;
+
+        const bullet = document.createElement("div");
+        bullet.classList.add("bullet");
+        bullet.style.left = event.clientX - 5 + "px"; // Center the bullet
+        bullet.style.top = event.clientY - 5 + "px"; // Center the bullet
+        emojiContainer.appendChild(bullet);
+
+        const bulletInterval = setInterval(() => {
+          const bulletRect = bullet.getBoundingClientRect();
+          const emojis = document.querySelectorAll(".emoji");
+          const objects = document.querySelectorAll(".object");
+
+          emojis.forEach((emoji) => {
+            const emojiRect = emoji.getBoundingClientRect();
+
+            if (
+              bulletRect.left < emojiRect.right &&
+              bulletRect.right > emojiRect.left &&
+              bulletRect.top < emojiRect.bottom &&
+              bulletRect.bottom > emojiRect.top
+            ) {
+              createExplosion(
+                bulletRect.left + bulletRect.width / 2,
+                bulletRect.top + bulletRect.height / 2
+              );
+              emoji.classList.add("hit");
+              emoji.remove();
+              bullet.remove();
+              updateScore(10); // Increment score by 10 for each kill
+              replenishLife(5); // Replenish 5% life for each kill
+              clearInterval(bulletInterval);
+            }
+          });
+
+          objects.forEach((object) => {
+            const objectRect = object.getBoundingClientRect();
+
+            if (
+              bulletRect.left < objectRect.right &&
+              bulletRect.right > objectRect.left &&
+              bulletRect.top < objectRect.bottom &&
+              bulletRect.bottom > objectRect.top
+            ) {
+              object.classList.add("hit");
+              object.remove();
+              bullet.remove();
+
+              // 50% chance to apply good or bad effect
+              if (Math.random() < 0.5) {
+                applyGoodEffect(object.innerText);
+              } else {
+                applyBadEffect(object.innerText);
+              }
+
+              clearInterval(bulletInterval);
+            }
+          });
+
+          if (bulletRect.top <= 0) {
+            bullet.remove();
+            clearInterval(bulletInterval);
+          } else {
+            bullet.style.top = bulletRect.top - 5 + "px"; // Move bullet up
+          }
+        }, 10);
+
+        setTimeout(() => {
+          bullet.remove();
+        }, 1000); // Remove the bullet after 1 second
+      }
+
+      function handleClick(event) {
+        event.preventDefault(); // Prevent default right-click context menu
+        shootBullet(event);
+      }
+
+      document.addEventListener("click", handleClick);
+      document.addEventListener("contextmenu", handleClick); // Handle right-click
+
+      setInterval(createEmoji, 1000); // Create a new emoji every second
+      setInterval(createObject, 30000); // Create a new object every 30 seconds
+    </script>
+  </body>
+</html>
